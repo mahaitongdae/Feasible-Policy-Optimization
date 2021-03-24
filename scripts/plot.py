@@ -15,7 +15,7 @@ units = dict()
 def plot_data(data, xaxis='Epoch', value="AverageEpRet", 
               condition="Condition1", smooth=1, paper=False,
               hidelegend=False, title=None, savedir=None, 
-              clear_xticks=False, **kwargs):
+              clear_xticks=False, logy=False, **kwargs):
     # special handling for plotting a horizontal line
     splits = value.split(',')
     value = splits[0]
@@ -72,6 +72,8 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
  (0.09019607843137255, 0.7450980392156863, 0.8117647058823529)]
 )
     #"""
+    if logy:
+        data[value] = np.log10(data[value])
     sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", condition=condition, ci='sd', **kwargs)
     """
     If you upgrade to any version of Seaborn greater than 0.8.1, switch from 
@@ -107,7 +109,7 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
 
     # plt.xlim([0, 2e6])
     #
-    # plt.ylim([-60, 0.0])
+    plt.ylim([-20, 1.0])
     if title:
        plt.title(title)
 
@@ -251,7 +253,7 @@ def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
 def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,  
                font_scale=1.5, smooth=1, select=None, exclude=None, estimator='mean',
                paper=True, hidelegend=False, title=None, savedir=None, show=True,
-               clear_xticks=False):
+               clear_xticks=False, logy=False):
     data = get_all_datasets(all_logdirs, legend, select, exclude)
     values = values if isinstance(values, list) else [values]
     condition = 'Condition2' if count else 'Condition1'
@@ -262,7 +264,7 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
                   smooth=smooth, estimator=estimator,
                   paper=paper, hidelegend=hidelegend, 
                   title=title, savedir=savedir,
-                  clear_xticks=clear_xticks)
+                  clear_xticks=clear_xticks,logy=logy)
 
     if show:
         plt.show()
@@ -271,7 +273,7 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logdir', default='data/2021-02-21_Crossroad/', nargs='*')
+    parser.add_argument('logdir', default='data/2021-02-21_Crossroad/', nargs='*')
     parser.add_argument('--legend', '-l', nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
     parser.add_argument('--value', '-y', default='Performance', nargs='*')
@@ -286,6 +288,7 @@ def main():
     parser.add_argument('--savedir', type=str, default='data/figure')
     parser.add_argument('--dont_show', action='store_true')
     parser.add_argument('--clearx', action='store_true')
+    parser.add_argument('--logy', default=True)
     args = parser.parse_args()
     """
 
@@ -340,7 +343,7 @@ def main():
                smooth=args.smooth, select=args.select, exclude=args.exclude,
                estimator=args.est, paper=args.paper, hidelegend=args.hidelegend,
                title=args.title, savedir=args.savedir, show=not(args.dont_show),
-               clear_xticks=args.clearx)
+               clear_xticks=args.clearx, logy=args.logy)
 
 if __name__ == "__main__":
     main()
