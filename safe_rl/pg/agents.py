@@ -150,6 +150,7 @@ class PPO_Agent_with_Mu(Agent):
                  pi_iters=80,
                  mu_iters=5,
                  kl_margin=1.2,
+                 ascent_interval=3,
                  **kwargs):
         super().__init__(**kwargs)
         self.clip_ratio = clip_ratio
@@ -158,6 +159,7 @@ class PPO_Agent_with_Mu(Agent):
         self.pi_iters = pi_iters
         self.mu_iters = mu_iters
         self.kl_margin = kl_margin
+        self.ascent_interval = ascent_interval
         self.params.update(dict(
             clipped_adv=True,
             first_order=True,
@@ -175,7 +177,8 @@ class PPO_Agent_with_Mu(Agent):
         # Run the update
         for i in range(self.pi_iters):
             _, kl = self.sess.run([train_pi, d_kl], feed_dict=inputs)
-
+            if i % self.ascent_interval == 0:
+                self.sess.run([train_mu], feed_dict=inputs)
             kl = mpi_avg(kl)
             if kl > self.kl_margin * target_kl:
                 self.logger.log('Early stopping at step %d due to reaching max kl.' % i)
@@ -199,7 +202,7 @@ class PPO_Agent_with_Mu(Agent):
 
 class TrustRegionAgent(Agent):
 
-    def __init__(self, damping_coeff=0.1, 
+    def __init__(self, damping_coeff=0.01,
                        backtrack_coeff=0.8, 
                        backtrack_iters=10, 
                        **kwargs):

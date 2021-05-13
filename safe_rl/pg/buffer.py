@@ -12,7 +12,7 @@ class CPOBuffer:
     def __init__(self, size, 
                  obs_shape, act_shape, pi_info_shapes, 
                  gamma=0.99, lam=0.95,
-                 cost_gamma=1, cost_lam=0.95):
+                 cost_gamma=0.99, cost_lam=0.95):
         self.obs_buf = np.zeros(combined_shape(size, obs_shape), dtype=np.float32)
         self.act_buf = np.zeros(combined_shape(size, act_shape), dtype=np.float32)
         self.adv_buf = np.zeros(size, dtype=np.float32)
@@ -44,7 +44,7 @@ class CPOBuffer:
             self.pi_info_bufs[k][self.ptr] = pi_info[k]
         self.ptr += 1
 
-    def finish_path(self, last_val=0, last_cval=0): # calculate advantages here
+    def finish_path(self, last_val=0, last_cval=0):
         path_slice = slice(self.path_start_idx, self.ptr)
         rews = np.append(self.rew_buf[path_slice], last_val)
         vals = np.append(self.val_buf[path_slice], last_val)
@@ -57,7 +57,6 @@ class CPOBuffer:
         cdeltas = costs[:-1] + self.gamma * cvals[1:] - cvals[:-1]
         self.cadv_buf[path_slice] = discount_cumsum(cdeltas, self.cost_gamma * self.cost_lam)
         self.cret_buf[path_slice] = discount_cumsum(costs, self.cost_gamma)[:-1]
-
 
         self.path_start_idx = self.ptr
 

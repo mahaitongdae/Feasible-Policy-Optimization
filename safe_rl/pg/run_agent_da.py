@@ -23,15 +23,16 @@ def run_polopt_agent(env_fn,
                      ac_kwargs=dict(), 
                      seed=0,
                      render=False,
+                     rew_scale=0.1,
                      # Experience collection:
                      steps_per_epoch=4000, 
                      epochs=50, 
                      max_ep_len=1000,
                      # Discount factors:
                      gamma=0.99, 
-                     lam=0.97,
+                     lam=0.95,
                      cost_gamma=0.99, 
-                     cost_lam=0.97, 
+                     cost_lam=0.95,
                      # Policy learning:
                      ent_reg=0.,
                      # Cost constraints / penalties:
@@ -41,14 +42,15 @@ def run_polopt_agent(env_fn,
                      # KL divergence:
                      target_kl=0.01, 
                      # Value learning:
-                     vf_lr=1e-3,
+                     vf_lr=3e-4,
                      vf_iters=80,
                      # Mu learning:
                      dual_ascent_interval=1,
                      # Logging:
                      logger=None, 
                      logger_kwargs=dict(), 
-                     save_freq=1
+                     save_freq=1,
+                     lr_decay=True
                      ):
 
 
@@ -224,8 +226,14 @@ def run_polopt_agent(env_fn,
 
     elif agent.first_order:
 
-        # Optimizer for first-order policy optimization
-        train_pi = MpiAdamOptimizer(learning_rate=agent.pi_lr).minimize(pi_loss)
+        if lr_decay:
+            local_step = tf.Variable(0.0, trainable=False)
+            pi_lr = tf.train.polynomial_decay(learning_rate=agent.pi_lr, global_step=local_step,
+                                              decay_steps=epochs * agent.pi_iters, end_learning_rate=1e-6)
+        else:
+            pi_lr = agent.pi_lr
+            # Optimizer for first-order policy optimization
+        train_pi = MpiAdamOptimizer(learning_rate=pi_lr).minimize(pi_loss)
 
         train_mu = MpiAdamOptimizer(learning_rate=agent.mu_lr).minimize(mu_loss)
 
@@ -260,6 +268,11 @@ def run_polopt_agent(env_fn,
         total_value_loss = v_loss + vc_loss
 
     # Optimizer for value learning
+    if lr_decay:
+        local_step_vf = tf.Variable(0.0, trainable=False)
+        vf_lr = tf.train.polynomial_decay(learning_rate=vf_lr, global_step=local_step_vf,
+                                          decay_steps=epochs * vf_iters, end_learning_rate=1e-6)
+
     train_vf = MpiAdamOptimizer(learning_rate=vf_lr).minimize(total_value_loss)
 
 
@@ -287,7 +300,7 @@ def run_polopt_agent(env_fn,
     #  Create function for running update (called at end of each epoch)       #
     #=========================================================================#
 
-    def update(epoch):
+    def update():
         cur_cost = logger.get_stats('EpCost')[0]
         c = cur_cost - cost_lim
         if c > 0 and agent.cares_about_cost:
@@ -327,15 +340,9 @@ def run_polopt_agent(env_fn,
         #     sess.run(train_penalty, feed_dict={cur_cost_ph: cur_cost})
 
         #=====================================================================#
-        #  Update policy                                                      #
+        #  Update policy and mu                                               #
         #=====================================================================#
         agent.update_pi(inputs)
-
-        # =====================================================================#
-        #  Update mu                                                           #
-        # =====================================================================#
-        if epoch % dual_ascent_interval == 0:
-            agent.update_mu(inputs)
 
         #=====================================================================#
         #  Update value function                                              #
@@ -366,10 +373,9 @@ def run_polopt_agent(env_fn,
 
     start_time = time.time()
     o, r, d, c, ep_ret, ep_cost, ep_len = env.reset(), 0, False, 0, 0, 0, 0
-    ep_real_dist = 0
-    ep_real_dist_road = 0
     cur_penalty = 0
-    cum_cost = 0
+    # cum_cost = 0
+    velo = 0
 
     for epoch in range(epochs):
 
@@ -396,10 +402,10 @@ def run_polopt_agent(env_fn,
             o2, r, d, info = env.step(a)
 
             # Include penalty on cost
-            c = info.get('cost', 0)
+            c = info.get('x_velocity', 0)
 
             # Track cumulative cost over training
-            cum_cost += c
+            # velo.append(c)
 
             # save and log
             if agent.reward_penalized:
@@ -407,12 +413,12 @@ def run_polopt_agent(env_fn,
                 r_total = r_total / (1 + cur_penalty)
                 buf.store(o, a, r_total, v_t, 0, 0, logp_t, pi_info_t)
             else:
-                buf.store(o, a, r, v_t, c, vc_t, logp_t, pi_info_t)
+                buf.store(o, a, rew_scale * r, v_t, rew_scale * c, vc_t, logp_t, pi_info_t)
             logger.store(VVals=v_t, CostVVals=vc_t)
 
             o = o2
             ep_ret += r
-            ep_cost += c
+            ep_cost += cost_gamma ** ep_len * c
             ep_len += 1
 
             terminal = d or (ep_len == max_ep_len)
@@ -433,12 +439,13 @@ def run_polopt_agent(env_fn,
 
                 # Only save EpRet / EpLen if trajectory finished
                 if terminal:
-                    logger.store(EpRet=ep_ret, EpLen=ep_len, EpCost=ep_cost,) # EpRealDist=ep_real_dist, EpRealDistRoad=ep_real_dist_road
+                    logger.store(EpRet=ep_ret, EpLen=ep_len, EpCost=ep_cost) # , EpVelocity=velo
                 else:
                     print('Warning: trajectory cut off by epoch at %d steps.'%ep_len)
 
                 # Reset environment
                 o, r, d, c, ep_ret, ep_len, ep_cost = env.reset(), 0, False, 0, 0, 0, 0
+                velo = 0
 
         # Save model
         if (epoch % save_freq == 0) or (epoch == epochs-1):
@@ -447,13 +454,13 @@ def run_polopt_agent(env_fn,
         #=====================================================================#
         #  Run RL update                                                      #
         #=====================================================================#
-        update(epoch)
+        update()
 
         #=====================================================================#
         #  Cumulative cost calculations                                       #
         #=====================================================================#
-        cumulative_cost = mpi_sum(cum_cost)
-        cost_rate = cumulative_cost / ((epoch+1)*steps_per_epoch)
+        # cumulative_cost = mpi_sum(cum_cost)
+        # cost_rate = cumulative_cost / ((epoch+1)*steps_per_epoch)
 
         #=====================================================================#
         #  Log performance and stats                                          #
@@ -465,8 +472,9 @@ def run_polopt_agent(env_fn,
         logger.log_tabular('EpRet', with_min_and_max=True)
         logger.log_tabular('EpCost', with_min_and_max=True)
         logger.log_tabular('EpLen', average_only=True)
-        logger.log_tabular('CumulativeCost', cumulative_cost)
-        logger.log_tabular('CostRate', cost_rate)
+#        logger.log_tabular('EpVelocity', with_min_and_max=True)
+        # logger.log_tabular('CumulativeCost', cumulative_cost)
+        # logger.log_tabular('CostRate', cost_rate)
 
         # Value function values
         logger.log_tabular('VVals', with_min_and_max=True)
