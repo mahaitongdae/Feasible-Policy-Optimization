@@ -74,9 +74,9 @@ class CPOBuffer:
 
         # Calculate violation return
         cost_lim = 15 # todo
-        self.violation_buf = self.cret_buf - cost_lim
-        _, vio_std = mpi_statistics_scalar(self.violation_buf)
-        self.violation_buf /= (vio_std + EPS)
+        self.violation_buf = self.cval_buf - cost_lim
+        # _, vio_std = mpi_statistics_scalar(self.violation_buf)
+        # self.violation_buf /= (vio_std + EPS)
 
         return [self.obs_buf, self.act_buf, self.adv_buf,
                 self.cadv_buf, self.ret_buf, self.cret_buf,

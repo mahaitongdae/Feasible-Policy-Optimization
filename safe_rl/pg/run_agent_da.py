@@ -235,7 +235,16 @@ def run_polopt_agent(env_fn,
             # Optimizer for first-order policy optimization
         train_pi = MpiAdamOptimizer(learning_rate=pi_lr).minimize(pi_loss)
 
-        train_mu = MpiAdamOptimizer(learning_rate=agent.mu_lr).minimize(mu_loss)
+        if lr_decay:
+            local_step = tf.Variable(0.0, trainable=False)
+            mu_lr = tf.train.polynomial_decay(learning_rate=agent.mu_lr, global_step=local_step,
+                                              decay_steps=int(epochs * agent.pi_iters / agent.ascent_interval),
+                                              end_learning_rate=1e-6)
+        else:
+            mu_lr = agent.mu_lr
+            # Optimizer for first-order policy optimization
+
+        train_mu = MpiAdamOptimizer(learning_rate=mu_lr).minimize(mu_loss)
 
         # Prepare training package for agent
         training_package = dict(train_pi=train_pi, train_mu=train_mu)
