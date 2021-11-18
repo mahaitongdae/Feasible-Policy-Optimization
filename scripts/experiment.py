@@ -4,9 +4,11 @@ import safety_gym
 import safe_rl
 from safe_rl.utils.run_utils import setup_logger_kwargs
 from safe_rl.utils.mpi_tools import mpi_fork
+from custom_env_utils import register_custom_env
 
 
 def main(env_id, algo, seed, exp_name, cpu):
+    register_custom_env()
 
     # Verify experiment
     robot_list = ['point', 'car', 'doggo']
@@ -24,15 +26,7 @@ def main(env_id, algo, seed, exp_name, cpu):
     exp_name = algo + '_' + env_id
     num_steps = 1.2e6
     steps_per_epoch = 8000
-    cost_lim = 100
-    if env_id == 'HalfCheetah-v3':
-        num_steps = 1e6
-        steps_per_epoch = 2000
-        cost_lim = 150
-    elif env_id == 'Hopper-v3':
-        num_steps = 1e6
-        steps_per_epoch = 2000
-        cost_lim = 100
+    cost_lim = 10
     epochs = int(num_steps / steps_per_epoch)
     save_freq = 50
     target_kl = 0.01
@@ -68,7 +62,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--robot', type=str, default='Car')
     # parser.add_argument('--task', type=str, default='Goal2')
-    parser.add_argument('--env_id', type=str, default='Hopper-v3')
+    parser.add_argument('--env_id', type=str, default='Safexp-CustomGoal2-v0')
     parser.add_argument('--algo', type=str, default='ppo_dual_ascent')
     parser.add_argument('--seed', type=int, default=2)
     parser.add_argument('--exp_name', type=str, default='for exp')

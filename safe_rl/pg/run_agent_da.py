@@ -124,6 +124,7 @@ def run_polopt_agent(env_fn,
     # Experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
     pi_info_shapes = {k: v.shape.as_list()[1:] for k,v in pi_info_phs.items()}
+    value_cost_lim = cost_lim / float(max_ep_len) / (1-cost_lam)
     buf = CPOBuffer(local_steps_per_epoch,
                     obs_shape, 
                     act_shape, 
@@ -131,7 +132,8 @@ def run_polopt_agent(env_fn,
                     gamma, 
                     lam,
                     cost_gamma,
-                    cost_lam)
+                    cost_lam,
+                    cost_lim)
 
 
     #=========================================================================#
@@ -383,8 +385,7 @@ def run_polopt_agent(env_fn,
     start_time = time.time()
     o, r, d, c, ep_ret, ep_cost, ep_len = env.reset(), 0, False, 0, 0, 0, 0
     cur_penalty = 0
-    # cum_cost = 0
-    velo = 0
+    cum_cost = 0
 
     for epoch in range(epochs):
 
@@ -411,10 +412,10 @@ def run_polopt_agent(env_fn,
             o2, r, d, info = env.step(a)
 
             # Include penalty on cost
-            c = info.get('x_velocity', 0)
+            c = info.get('cost', 0)
 
             # Track cumulative cost over training
-            # velo.append(c)
+            cum_cost += c
 
             # save and log
             if agent.reward_penalized:
@@ -468,8 +469,8 @@ def run_polopt_agent(env_fn,
         #=====================================================================#
         #  Cumulative cost calculations                                       #
         #=====================================================================#
-        # cumulative_cost = mpi_sum(cum_cost)
-        # cost_rate = cumulative_cost / ((epoch+1)*steps_per_epoch)
+        cumulative_cost = mpi_sum(cum_cost)
+        cost_rate = cumulative_cost / ((epoch+1)*steps_per_epoch)
 
         #=====================================================================#
         #  Log performance and stats                                          #
@@ -481,9 +482,8 @@ def run_polopt_agent(env_fn,
         logger.log_tabular('EpRet', with_min_and_max=True)
         logger.log_tabular('EpCost', with_min_and_max=True)
         logger.log_tabular('EpLen', average_only=True)
-#        logger.log_tabular('EpVelocity', with_min_and_max=True)
-        # logger.log_tabular('CumulativeCost', cumulative_cost)
-        # logger.log_tabular('CostRate', cost_rate)
+        logger.log_tabular('CumulativeCost', cumulative_cost)
+        logger.log_tabular('CostRate', cost_rate)
 
         # Value function values
         logger.log_tabular('VVals', with_min_and_max=True)
