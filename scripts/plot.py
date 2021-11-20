@@ -273,13 +273,16 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
-                                           '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
-                                           '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
-                                           '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0'], nargs='*')
+    parser.add_argument('logdir', default=['../data/2021-11-20_ppo_Safexp-CustomPush2-v0',
+                                          ], nargs='*')
+    # parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0',
+    #                                        '../data/2021-11-20_cpo_Safexp-CustomGoal2-v0',
+    #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoal2-v0',
+    #                                        '../data/2021-11-20_ppo_Safexp-CustomGoal2-v0',
+    #                                        ], nargs='*')
     parser.add_argument('--legend', '-l', nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
-    parser.add_argument('--value', '-y', default='AverageEpCost', nargs='*')
+    parser.add_argument('--value', '-y', default='MaxEpCost', nargs='*')
     parser.add_argument('--count', action='store_true')
     parser.add_argument('--smooth', '-s', type=int, default=5)
     parser.add_argument('--select', nargs='*')
