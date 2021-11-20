@@ -4,7 +4,7 @@ import gym
 import time
 import safe_rl.pg.trust_region as tro
 from safe_rl.pg.agents import PPOAgent, TRPOAgent, CPOAgent, PPO_Agent_with_Mu
-from safe_rl.pg.buffer import CPOBuffer
+from safe_rl.pg.buffer import CPOBuffer, CPOBuffer_with_vio
 from safe_rl.pg.network import count_vars, \
                                get_vars, \
                                mlp_actor_critic, mlp_actor_critic_with_lam,\
@@ -17,41 +17,41 @@ from safe_rl.utils.mpi_tools import mpi_fork, proc_id, num_procs, mpi_sum, mpi_s
 
 # Multi-purpose agent runner for policy optimization algos 
 # (PPO, TRPO, their primal-dual equivalents, CPO)
-def run_polopt_agent(env_fn, 
-                     agent=PPOAgent(),
-                     actor_critic=mlp_actor_critic_with_lam,
-                     ac_kwargs=dict(), 
-                     seed=0,
-                     render=False,
-                     rew_scale=0.1,
-                     # Experience collection:
-                     steps_per_epoch=4000, 
-                     epochs=50, 
-                     max_ep_len=1000,
-                     # Discount factors:
-                     gamma=0.99, 
-                     lam=0.95,
-                     cost_gamma=0.99, 
-                     cost_lam=0.95,
-                     # Policy learning:
-                     ent_reg=0.,
-                     # Cost constraints / penalties:
-                     cost_lim=25,
-                     penalty_init=1.,
-                     penalty_lr=5e-2,
-                     # KL divergence:
-                     target_kl=0.01, 
-                     # Value learning:
-                     vf_lr=3e-4,
-                     vf_iters=80,
-                     # Mu learning:
-                     dual_ascent_interval=1,
-                     # Logging:
-                     logger=None, 
-                     logger_kwargs=dict(), 
-                     save_freq=1,
-                     lr_decay=True
-                     ):
+def run_polopt_agent_da(env_fn,
+                        agent=PPOAgent(),
+                        actor_critic=mlp_actor_critic_with_lam,
+                        ac_kwargs=dict(),
+                        seed=0,
+                        render=False,
+                        rew_scale=0.1,
+                        # Experience collection:
+                        steps_per_epoch=4000,
+                        epochs=50,
+                        max_ep_len=1000,
+                        # Discount factors:
+                        gamma=0.99,
+                        lam=0.95,
+                        cost_gamma=0.99,
+                        cost_lam=0.95,
+                        # Policy learning:
+                        ent_reg=0.,
+                        # Cost constraints / penalties:
+                        cost_lim=25,
+                        penalty_init=1.,
+                        penalty_lr=5e-2,
+                        # KL divergence:
+                        target_kl=0.01,
+                        # Value learning:
+                        vf_lr=3e-4,
+                        vf_iters=80,
+                        # Mu learning:
+                        dual_ascent_interval=1,
+                        # Logging:
+                        logger=None,
+                        logger_kwargs=dict(),
+                        save_freq=1,
+                        lr_decay=True
+                        ):
 
 
     #=========================================================================#
@@ -125,15 +125,15 @@ def run_polopt_agent(env_fn,
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
     pi_info_shapes = {k: v.shape.as_list()[1:] for k,v in pi_info_phs.items()}
     value_cost_lim = cost_lim / float(max_ep_len) / (1-cost_lam)
-    buf = CPOBuffer(local_steps_per_epoch,
-                    obs_shape, 
-                    act_shape, 
-                    pi_info_shapes, 
-                    gamma, 
-                    lam,
-                    cost_gamma,
-                    cost_lam,
-                    cost_lim)
+    buf = CPOBuffer_with_vio(local_steps_per_epoch,
+                            obs_shape,
+                            act_shape,
+                            pi_info_shapes,
+                            gamma,
+                            lam,
+                            cost_gamma,
+                            cost_lam,
+                            cost_lim)
 
 
     #=========================================================================#
@@ -585,25 +585,25 @@ if __name__ == '__main__':
     elif args.agent=='ppo_dual_ascent':
         agent = PPO_Agent_with_Mu(**dual_ascent_kwargs)
 
-    run_polopt_agent(lambda : gym.make(args.env),
-                     agent=agent,
-                     actor_critic=mlp_actor_critic_with_lam,
-                     ac_kwargs=dict(hidden_sizes=[args.hid]*args.l), 
-                     seed=args.seed, 
-                     render=args.render, 
-                     # Experience collection:
-                     steps_per_epoch=args.steps, 
-                     epochs=args.epochs,
-                     max_ep_len=args.len,
-                     # Discount factors:
-                     gamma=args.gamma,
-                     cost_gamma=args.cost_gamma,
-                     # Policy learning:
-                     ent_reg=args.entreg,
-                     # KL Divergence:
-                     target_kl=args.kl,
-                     cost_lim=args.cost_lim, 
-                     # Logging:
-                     logger_kwargs=logger_kwargs,
-                     save_freq=1
-                     )
+    run_polopt_agent_da(lambda : gym.make(args.env),
+                        agent=agent,
+                        actor_critic=mlp_actor_critic_with_lam,
+                        ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+                        seed=args.seed,
+                        render=args.render,
+                        # Experience collection:
+                        steps_per_epoch=args.steps,
+                        epochs=args.epochs,
+                        max_ep_len=args.len,
+                        # Discount factors:
+                        gamma=args.gamma,
+                        cost_gamma=args.cost_gamma,
+                        # Policy learning:
+                        ent_reg=args.entreg,
+                        # KL Divergence:
+                        target_kl=args.kl,
+                        cost_lim=args.cost_lim,
+                        # Logging:
+                        logger_kwargs=logger_kwargs,
+                        save_freq=1
+                        )

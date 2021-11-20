@@ -1,6 +1,7 @@
 from functools import partial
 from safe_rl.pg.agents import PPOAgent, TRPOAgent, CPOAgent, PPO_Agent_with_Mu
-from safe_rl.pg.run_agent_da import run_polopt_agent
+from safe_rl.pg.run_agent_da import run_polopt_agent_da
+from safe_rl.pg.run_agent import run_polopt_agent
 
 def ppo(**kwargs):
     ppo_kwargs = dict(
@@ -34,7 +35,7 @@ def ppo_dual_ascent(**kwargs):
         dual_ascent=True
     )
     agent = PPO_Agent_with_Mu(**ppo_kwargs)
-    run_polopt_agent(agent=agent, **kwargs)
+    run_polopt_agent_da(agent=agent, **kwargs)
 
 
 def trpo(**kwargs):
