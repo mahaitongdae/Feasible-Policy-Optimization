@@ -109,7 +109,7 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
 
     # plt.xlim([0, 2e6])
     #
-    plt.ylim([-20, 1.0])
+    # plt.ylim([-20, 1.0])
     if title:
        plt.title(title)
 
@@ -273,12 +273,12 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('logdir', default='data/2021-02-21_Crossroad/', nargs='*')
+    parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0'], nargs='*')
     parser.add_argument('--legend', '-l', nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
-    parser.add_argument('--value', '-y', default='Performance', nargs='*')
+    parser.add_argument('--value', '-y', default='AverageEpCost', nargs='*')
     parser.add_argument('--count', action='store_true')
-    parser.add_argument('--smooth', '-s', type=int, default=1)
+    parser.add_argument('--smooth', '-s', type=int, default=5)
     parser.add_argument('--select', nargs='*')
     parser.add_argument('--exclude', nargs='*')
     parser.add_argument('--est', default='mean')
@@ -288,7 +288,7 @@ def main():
     parser.add_argument('--savedir', type=str, default='data/figure')
     parser.add_argument('--dont_show', action='store_true')
     parser.add_argument('--clearx', action='store_true')
-    parser.add_argument('--logy', default=True)
+    parser.add_argument('--logy', default=False)
     args = parser.parse_args()
     """
 

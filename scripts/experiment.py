@@ -62,7 +62,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--robot', type=str, default='Car')
     # parser.add_argument('--task', type=str, default='Goal2')
-    parser.add_argument('--env_id', type=str, default='Safexp-CustomGoal2-v0')
+    parser.add_argument('--env_id', type=str, default='Safexp-CustomGoalPillar2-v0')
     parser.add_argument('--algo', type=str, default='ppo_dual_ascent')
     parser.add_argument('--seed', type=int, default=2)
     parser.add_argument('--exp_name', type=str, default='for exp')

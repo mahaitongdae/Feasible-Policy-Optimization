@@ -181,11 +181,11 @@ def register_custom_env():
 
             # 'robot_keepout': 0.4,
 
-            'pillars_num': 4,  # Number of pillars in the world
+            'pillars_num': 8,  # Number of pillars in the world
             'pillars_placements': None,  # Pillars placements list (defaults to full extents)
             # 'pillars_locations': [],  # Fixed locations to override placements
             'pillars_keepout': 0.4,  # Radius for placement of pillars
-            'pillars_size': 0.15,  # Half-size (radius) of pillar objects
+            'pillars_size': 0.30,  # Half-size (radius) of pillar objects
             'pillars_height': 0.5,  # Half-height of pillars geoms
             'pillars_cost': 1.0,  # Cost (per step) for being in contact with a pillar
 
@@ -253,11 +253,11 @@ def register_custom_env():
 
             # 'robot_keepout': 0.4,
 
-            'pillars_num': 4,  # Number of pillars in the world
+            'pillars_num': 8,  # Number of pillars in the world
             'pillars_placements': None,  # Pillars placements list (defaults to full extents)
             # 'pillars_locations': [],  # Fixed locations to override placements
             'pillars_keepout': 0.4,  # Radius for placement of pillars
-            'pillars_size': 0.25,  # Half-size (radius) of pillar objects
+            'pillars_size': 0.45,  # Half-size (radius) of pillar objects
             'pillars_height': 0.5,  # Half-height of pillars geoms
             'pillars_cost': 1.0,  # Cost (per step) for being in contact with a pillar
 

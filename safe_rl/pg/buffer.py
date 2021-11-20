@@ -74,7 +74,7 @@ class CPOBuffer:
         self.cadv_buf -= cadv_mean
 
         # Calculate violation return
-        self.violation_buf = self.cval_buf - self.value_cost_lim
+        self.violation_buf = self.cval_buf - 1.0
         # _, vio_std = mpi_statistics_scalar(self.violation_buf)
         # self.violation_buf /= (vio_std + EPS)
 
