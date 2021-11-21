@@ -63,7 +63,7 @@ if __name__ == '__main__':
     # parser.add_argument('--robot', type=str, default='Car')
     # parser.add_argument('--task', type=str, default='Goal2')
     parser.add_argument('--env_id', type=str, default='Safexp-CustomPush2-v0')
-    parser.add_argument('--algo', type=str, default='cpo')
+    parser.add_argument('--algo', type=str, default='ppo_dual_ascent')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--exp_name', type=str, default='for exp')
     parser.add_argument('--cpu', type=int, default=1)
