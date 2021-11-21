@@ -12,9 +12,9 @@ DIV_LINE_WIDTH = 50
 exp_idx = 0
 units = dict()
 
-def plot_data(data, xaxis='Epoch', value="AverageEpRet", 
+def plot_data(data, xaxis='Epoch', value="AverageEpRet",
               condition="Condition1", smooth=1, paper=False,
-              hidelegend=False, title=None, savedir=None, 
+              hidelegend=False, title=None, savedir=None,
               clear_xticks=False, logy=False, cstrline=False, env_name=None, **kwargs):
     # special handling for plotting a horizontal line
     fig, ax = plt.subplots()
@@ -54,6 +54,9 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
 
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
+
+    for algo in ['FPO','CPO','PPO-L','PPO']:
+        pass
 
     font_scale = 1. if paper else 1.
     sns.set(style="whitegrid", font_scale=font_scale)
@@ -174,9 +177,9 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
 def get_datasets(logdir, condition=None):
     """
     Recursively look through logdir for output files produced by
-    spinup.logx.Logger. 
+    spinup.logx.Logger.
 
-    Assumes that any file "progress.txt" is a valid hit. 
+    Assumes that any file "progress.txt" is a valid hit.
     """
     global exp_idx
     global units
@@ -216,10 +219,10 @@ def get_datasets(logdir, condition=None):
 def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
     """
     For every entry in all_logdirs,
-        1) check if the entry is a real directory and if it is, 
-           pull data from it; 
+        1) check if the entry is a real directory and if it is,
+           pull data from it;
 
-        2) if not, check to see if the entry is a prefix for a 
+        2) if not, check to see if the entry is a prefix for a
            real directory, and pull data from that.
     """
     logdirs = []
@@ -264,7 +267,7 @@ def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
     return data
 
 
-def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,  
+def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
                font_scale=1.5, smooth=1, select=None, exclude=None, estimator='mean',
                paper=True, hidelegend=False, title=None, savedir=None, show=True,
                clear_xticks=False, logy=False, cstrline=False):
@@ -274,9 +277,9 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
     condition = 'Condition2' if count else 'Condition1'
     estimator = getattr(np, estimator)      # choose what to show on main curve: mean? max? min?
     for value in values:
-        plot_data(data, xaxis=xaxis, value=value, condition=condition, 
+        plot_data(data, xaxis=xaxis, value=value, condition=condition,
                   smooth=smooth, estimator=estimator,
-                  paper=paper, hidelegend=hidelegend, 
+                  paper=paper, hidelegend=hidelegend,
                   title=title, savedir=savedir,
                   clear_xticks=clear_xticks,logy=logy, cstrline=cstrline, env_name=env_name)
 
@@ -370,7 +373,7 @@ def main():
 
     """
 
-    make_plots(args.logdir, args.legend, args.xaxis, args.value, args.count, 
+    make_plots(args.logdir, args.legend, args.xaxis, args.value, args.count,
                smooth=args.smooth, select=args.select, exclude=args.exclude,
                estimator=args.est, paper=args.paper, hidelegend=args.hidelegend,
                title=args.title, savedir=args.savedir, show=not(args.dont_show),
