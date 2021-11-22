@@ -12,12 +12,15 @@ DIV_LINE_WIDTH = 50
 exp_idx = 0
 units = dict()
 
+FONTSIZE = 10
+LINEWIDTH = 4.
+
 def plot_data(data, xaxis='Epoch', value="AverageEpRet",
               condition="Condition1", smooth=1, paper=False,
               hidelegend=False, title=None, savedir=None,
               clear_xticks=False, logy=False, cstrline=False, env_name=None, **kwargs):
     # special handling for plotting a horizontal line
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
     splits = value.split(',')
     value = splits[0]
     #if len(splits) > 1:
@@ -52,126 +55,187 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
             smoothed_x = np.convolve(x,y,'same') / np.convolve(z,y,'same')
             datum[value] = smoothed_x
 
+    sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
+    df_times = []
+    data_dist = data[['AverageCostVVals','StdCostVVals']]
+    for algo in ['FPO','CPO','PPO-L','PPO']: #
+        for epoch in range(150):
+            if (epoch) % 15 == 14 or epoch == 0:
+                mean_and_std = data_dist[np.logical_and(data['Condition1'] == algo, data['Epoch'] == epoch)].mean()
+                mean, std = mean_and_std['AverageCostVVals'], mean_and_std['StdCostVVals']
+                dist = np.random.normal(mean, std, 1000)
+                df = pd.DataFrame((dict(g=epoch, x=dist)))
+                df_times.append(df)
+        total_df = df_times[0].append(df_times[1:])
 
-    for algo in ['FPO','CPO','PPO-L','PPO']:
-        pass
+    # a = data
+    # for i in range(10):
+    #     dist = []
+    #     for interval in a[(i + 1) * 5][2]:
+    #         if interval[2] > 0:
+    #             interval_dist = np.linspace(interval[0], interval[1], int(interval[2]))
+    #             dist += list(interval_dist)
+    #     iter = a[(i + 1) * 5][1] / 10000 * np.ones([len(dist), ])
+    #     df = pd.DataFrame((dict(g=iter, x=dist)))
+    #     df_times.append(df)
+    # total_df = df_times[0].append(df_times[1:])
 
-    font_scale = 1. if paper else 1.
-    sns.set(style="whitegrid", font_scale=font_scale)
-    sns.set_palette(sns.color_palette('bright'))
+        # Initialize the FacetGrid object
 
-    """
-    #
+        pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
+        g = sns.FacetGrid(total_df, row="g", hue="g", aspect=15, size=.5, palette=pal, xlim=[-5, 5], ) #
 
-    sns.set_palette([(0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
- #(1.0, 0.4980392156862745, 0.054901960784313725),
- (0.17254901960784313, 0.6274509803921569, 0.17254901960784313),
- (0.5803921568627451, 0.403921568627451, 0.7411764705882353),
- (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),
- #(0.5490196078431373, 0.33725490196078434, 0.29411764705882354),
- #(0.8901960784313725, 0.4666666666666667, 0.7607843137254902),
- #(0.4980392156862745, 0.4980392156862745, 0.4980392156862745),
- (0.7372549019607844, 0.7411764705882353, 0.13333333333333333),
- (0.09019607843137255, 0.7450980392156863, 0.8117647058823529)]
-)
-    #"""
-    if logy:
-        data[value] = np.log10(data[value])
-    sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", condition=condition, ci='sd', **kwargs)
-    """
-    If you upgrade to any version of Seaborn greater than 0.8.1, switch from 
-    tsplot to lineplot replacing L29 with:
+        # cstr_plt_ax = []
+        # for i in [0, 3, 6, 9]:
+        #  cstr_plt_ax.append(g.row_names[i])
 
-        sns.lineplot(data=data, x=xaxis, y=value, hue=condition, ci='sd', **kwargs)
+        for iter, ax in g.axes_dict.items():
+            ax.plot([1, 1], [0, 0.12], color='r', linestyle='dashed', linewidth=LINEWIDTH)  # 0.06
+            if iter == g.row_names[0]:
+                ax.text(0, .45, r"Iters $*10^4$", color='black', fontsize=FONTSIZE,  # fontweight="bold",
+                        ha="left", va="center", transform=ax.transAxes)
 
-    Changes the colorscheme and the default legend style, though.
-    """
-    handles, labels = ax.get_legend_handles_labels()
-    if cstrline:
-        cstrline = plt.plot([0., ax.get_xlim()[1]], [10.0, 10.0], linewidth=2, color='black', linestyle='--')
-        ax.legend(handles=handles + [cstrline[0]], labels=labels + ['threshold'], loc='best',
-                   frameon=False)
-    else:
-        plt.legend(loc='best')#.draggable()
+        # Draw the densities in a few steps
+        g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
 
-    """
-    For the version of the legend used in the Spinning Up benchmarking page, 
-    swap L38 with:
+        g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw=.2)
+        g.map(plt.axhline, y=0, lw=2, clip_on=False)
 
-    plt.legend(loc='upper center', ncol=6, handlelength=1,
-               mode="expand", borderaxespad=0., prop={'size': 13})
-    """
+        # Define and use a simple function to label the plot in axes coordinates
+        def label(x, color, label):
+            ax = plt.gca()
+            ax.text(0, .1, label, color='black', fontsize=FONTSIZE,
+                    ha="left", va="center", transform=ax.transAxes)  # fontweight="bold",
 
-    xmax = np.max(np.asarray(data[xaxis]))
-    xscale = xmax > 5e3
-    if xscale:
-        # Just some formatting niceness: x-axis scale in scientific notation if max x is large
-        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        g.map(label, "x")
 
-    old_ymin, old_ymax = plt.ylim()
+        # Set the subplots to overlap
+        g.fig.subplots_adjust(hspace=-.6)
 
-    if ymin:
-        plt.ylim(bottom=min(ymin, old_ymin))
+        # Remove axes details that don't play will with overlap
+        g.set_titles("")
+        g.set(yticks=[])
+        g.set_xticklabels(fontsize=FONTSIZE)
+        g.despine(bottom=True, left=True)
 
-    if ymax:
-        plt.ylim(top=ymax) # max(ymax, old_ymax)
+    # plt.show()
 
-    # if title:
-    #    plt.title(title)
-
-    if paper:
-        plt.gcf().set_size_inches(3.85,2.75)
-        plt.tight_layout(pad=0.5)
-    else:
-        plt.tight_layout(pad=0.5)
-
-
-    if y_horiz:
-        # y, xmin, xmax, colors='k', linestyles='solid', label='',
-        plt.hlines(y_horiz, 0, xmax, colors='red', linestyles='dashed', label='limit')
-        plt.grid()
-
-    fname = osp.join(savedir, title+'_'+value).lower()
-
-    if env_name is not None:
-        fname = fname + '_' + env_name.lower()
-
-    if clear_xticks:
-        x, _ = plt.xticks()
-        plt.xticks(x, [])
-        plt.xlabel('')
-        fname += '_nox'
-
-    if savedir is not '':
-        os.makedirs(savedir, exist_ok=True)
-        plt.savefig(fname+'.pdf', format='pdf')
-
-    if hidelegend:
-        ax.legend().remove()
-
+#     font_scale = 1. if paper else 1.
+#     sns.set(style="whitegrid", font_scale=font_scale)
+#     sns.set_palette(sns.color_palette('bright'))
+#
+#     """
+#     #
+#
+#     sns.set_palette([(0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
+#  #(1.0, 0.4980392156862745, 0.054901960784313725),
+#  (0.17254901960784313, 0.6274509803921569, 0.17254901960784313),
+#  (0.5803921568627451, 0.403921568627451, 0.7411764705882353),
+#  (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),
+#  #(0.5490196078431373, 0.33725490196078434, 0.29411764705882354),
+#  #(0.8901960784313725, 0.4666666666666667, 0.7607843137254902),
+#  #(0.4980392156862745, 0.4980392156862745, 0.4980392156862745),
+#  (0.7372549019607844, 0.7411764705882353, 0.13333333333333333),
+#  (0.09019607843137255, 0.7450980392156863, 0.8117647058823529)]
+# )
+#     #"""
+#     if logy:
+#         data[value] = np.log10(data[value])
+#     sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", condition=condition, ci='sd', **kwargs)
+#     """
+#     If you upgrade to any version of Seaborn greater than 0.8.1, switch from
+#     tsplot to lineplot replacing L29 with:
+#
+#         sns.lineplot(data=data, x=xaxis, y=value, hue=condition, ci='sd', **kwargs)
+#
+#     Changes the colorscheme and the default legend style, though.
+#     """
+#     handles, labels = ax.get_legend_handles_labels()
+#     if cstrline:
+#         cstrline = plt.plot([0., ax.get_xlim()[1]], [10.0, 10.0], linewidth=2, color='black', linestyle='--')
+#         ax.legend(handles=handles + [cstrline[0]], labels=labels + ['threshold'], loc='best',
+#                    frameon=False)
+#     else:
+#         plt.legend(loc='best')#.draggable()
+#
+#     """
+#     For the version of the legend used in the Spinning Up benchmarking page,
+#     swap L38 with:
+#
+#     plt.legend(loc='upper center', ncol=6, handlelength=1,
+#                mode="expand", borderaxespad=0., prop={'size': 13})
+#     """
+#
+#     xmax = np.max(np.asarray(data[xaxis]))
+#     xscale = xmax > 5e3
+#     if xscale:
+#         # Just some formatting niceness: x-axis scale in scientific notation if max x is large
+#         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+#
+#     old_ymin, old_ymax = plt.ylim()
+#
+#     if ymin:
+#         plt.ylim(bottom=min(ymin, old_ymin))
+#
+#     if ymax:
+#         plt.ylim(top=ymax) # max(ymax, old_ymax)
+#
+#     # if title:
+#     #    plt.title(title)
+#
+#     if paper:
+#         plt.gcf().set_size_inches(3.85,2.75)
+#         plt.tight_layout(pad=0.5)
+#     else:
+#         plt.tight_layout(pad=0.5)
+#
+#
+#     if y_horiz:
+#         # y, xmin, xmax, colors='k', linestyles='solid', label='',
+#         plt.hlines(y_horiz, 0, xmax, colors='red', linestyles='dashed', label='limit')
+#         plt.grid()
+#
+        fname = osp.join(savedir, 'dist_'+algo).lower()
+#
+        if env_name is not None:
+            fname = fname + '_' + env_name.lower()
+#
+#     if clear_xticks:
+#         x, _ = plt.xticks()
+#         plt.xticks(x, [])
+#         plt.xlabel('')
+#         fname += '_nox'
+#
+#     if savedir is not '':
+#         os.makedirs(savedir, exist_ok=True)
+#         plt.savefig(fname+'.pdf', format='pdf')
+#
+#     if hidelegend:
+#         ax.legend().remove()
+#
         if savedir is not '':
             plt.savefig(fname + '_nolegend.pdf', format='pdf')
-
-    if savedir is not '':
-        # Separately save legend
-        if cstrline:
-            h, l = ax.get_legend_handles_labels()
-            h += cstrline
-            l += ['threshold']
-        else:
-            h, l = ax.get_legend_handles_labels()
-        legfig, legax = plt.subplots(figsize=(7.5,0.75))
-        legax.set_facecolor('white')
-        leg = legax.legend(h, l, loc='center', ncol=5, handlelength=1.5,
-                   mode="expand", borderaxespad=0., prop={'size': 13})
-        legax.xaxis.set_visible(False)
-        legax.yaxis.set_visible(False)
-        for line in leg.get_lines():
-            line.set_linewidth(4.0)
-        plt.tight_layout(pad=0.5)
-        plt.savefig(osp.join(savedir, title+'_legend.pdf'), format='pdf')
+#
+        # if savedir is not '':
+        #     # Separately save legend
+        #     if cstrline:
+        #         h, l = ax.get_legend_handles_labels()
+        #         h += cstrline
+        #         l += ['threshold']
+        #     else:
+        #         h, l = ax.get_legend_handles_labels()
+        #     legfig, legax = plt.subplots(figsize=(7.5,0.75))
+        #     legax.set_facecolor('white')
+        #     leg = legax.legend(h, l, loc='center', ncol=5, handlelength=1.5,
+        #                mode="expand", borderaxespad=0., prop={'size': 13})
+        #     legax.xaxis.set_visible(False)
+        #     legax.yaxis.set_visible(False)
+        #     for line in leg.get_lines():
+        #         line.set_linewidth(4.0)
+        #     plt.tight_layout(pad=0.5)
+        #     plt.savefig(osp.join(savedir, title+'_legend.pdf'), format='pdf')
 
 
 def get_datasets(logdir, condition=None):
@@ -283,8 +347,8 @@ def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
                   title=title, savedir=savedir,
                   clear_xticks=clear_xticks,logy=logy, cstrline=cstrline, env_name=env_name)
 
-    if show:
-        plt.show()
+    # if show:
+    #     plt.show()
 
 
 def main():
@@ -297,22 +361,22 @@ def main():
     #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoal2-v0',
     #                                        '../data/2021-11-20_ppo_Safexp-CustomGoal2-v0',
     #                                        ], nargs='*')
-    parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_cpo_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_ppo_lagrangian_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_ppo_Safexp-CustomPush2-v0',
-                                           ], nargs='*')
-    # parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0',
+    # parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_cpo_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_ppo_lagrangian_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_ppo_Safexp-CustomPush2-v0',
     #                                        ], nargs='*')
+    parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0',
+                                           ], nargs='*')
     parser.add_argument('--legend', '-l', default=['FPO','CPO','PPO-L','PPO'], nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
-    parser.add_argument('--value', '-y', default=['AverageEpCost,h10,u100','AverageEpRet','MaxCostVVals'], nargs='*')
+    parser.add_argument('--value', '-y', default=['AverageEpCost,h10,u100'], nargs='*')
     parser.add_argument('--count', action='store_true')
     parser.add_argument('--cstrline', default=False, action='store_true')
-    parser.add_argument('--smooth', '-s', type=int, default=10)
+    parser.add_argument('--smooth', '-s', type=int, default=1)
     parser.add_argument('--select', nargs='*')
     parser.add_argument('--exclude', nargs='*')
     parser.add_argument('--est', default='mean')
@@ -320,7 +384,7 @@ def main():
     parser.add_argument('--hidelegend', '-hl', default=True, action='store_true')
     parser.add_argument('--title', type=str, default='Performance')
     parser.add_argument('--savedir', type=str, default='data/figure')
-    parser.add_argument('--dont_show', default=True, action='store_true')
+    parser.add_argument('--dont_show', default=False, action='store_true')
     parser.add_argument('--clearx', action='store_true')
     parser.add_argument('--logy', default=False)
     args = parser.parse_args()
