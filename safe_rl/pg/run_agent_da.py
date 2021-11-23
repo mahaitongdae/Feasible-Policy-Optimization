@@ -349,7 +349,7 @@ def run_polopt_agent_da(env_fn,
 
         pre_update_measures = sess.run(measures, feed_dict=inputs)
         summary = sess.run(merged_summary, feed_dict)
-        summary_writer.add_summary(summary, global_step=(t) * num_procs())
+        summary_writer.add_summary(summary, global_step=epoch * steps_per_epoch)
         logger.store(**pre_update_measures)
 
         #=====================================================================#

@@ -11,6 +11,13 @@ DIV_LINE_WIDTH = 50
 # Global vars for tracking and labeling data at load time.
 exp_idx = 0
 units = dict()
+YLABEL_DICT={'AverageEpCost': 'Episode Cost',
+             'AverageEpRet': 'Episode Return',
+             'AverageCostVVals': r'Average $v^\pi_c(s)$'}
+TITLE_DICT={'customgoalpillar2':'Goal-Pillar',
+            'customgoal2':'Goal-Hazard',
+            'custompush2':'Push-Hazard',
+            }
 
 def plot_data(data, xaxis='Epoch', value="AverageEpRet", 
               condition="Condition1", smooth=1, paper=False,
@@ -116,7 +123,8 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
         plt.ylim(top=ymax) # max(ymax, old_ymax)
 
     # if title:
-    #    plt.title(title)
+    plt.title(TITLE_DICT.get(env_name.lower()))
+    plt.ylabel(YLABEL_DICT.get(value))
 
     if paper:
         plt.gcf().set_size_inches(3.85,2.75)
@@ -128,7 +136,7 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
     if y_horiz:
         # y, xmin, xmax, colors='k', linestyles='solid', label='',
         plt.hlines(y_horiz, 0, xmax, colors='red', linestyles='dashed', label='limit')
-        plt.grid()
+        # plt.grid()
 
     fname = osp.join(savedir, title+'_'+value).lower()
 
@@ -306,7 +314,8 @@ def main():
     #                                        ], nargs='*')
     parser.add_argument('--legend', '-l', default=['FPO','CPO','PPO-L','PPO'], nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
-    parser.add_argument('--value', '-y', default=['AverageEpCost,h10,u100','AverageEpRet','MaxCostVVals'], nargs='*')
+    # parser.add_argument('--value', '-y', default=['CostRate', 'AverageEpRet', 'AverageCostVVals,h1,u10', 'AverageEpCost,h10,u100'], nargs='*') # 'AverageEpCost,h10,u100',
+    parser.add_argument('--value', '-y', default=['CostRate', 'AverageEpRet', 'AverageCostVVals,h1', 'AverageEpCost,h10'], nargs='*') # 'AverageEpCost,h10,u100',
     parser.add_argument('--count', action='store_true')
     parser.add_argument('--cstrline', default=False, action='store_true')
     parser.add_argument('--smooth', '-s', type=int, default=10)
