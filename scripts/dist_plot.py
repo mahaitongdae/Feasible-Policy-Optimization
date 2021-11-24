@@ -61,13 +61,13 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
     df_times = []
     data_dist = data[['AverageCostVVals','StdCostVVals']]
     for algo in ['FPO','CPO','PPO-L','PPO']: #
-        for epoch in range(120):
-            if (epoch) % 15 == 14 or epoch == 0:
+        for epoch in range(150):
+            if (epoch) % 15 == 14:
                 mean_and_std = data_dist[np.logical_and(data['Condition1'] == algo, data['Epoch'] == epoch)].mean()
                 mean_and_std_min = data_dist[np.logical_and(data['Condition1'] == algo, data['Epoch'] == epoch)].min()
                 mean, std = mean_and_std['AverageCostVVals'], mean_and_std_min['StdCostVVals']
                 dist = np.random.normal(mean, std, 1000)
-                df = pd.DataFrame((dict(g=epoch, x=dist)))
+                df = pd.DataFrame((dict(g=int((epoch+1) * 0.8), x=dist)))
                 df_times.append(df)
         total_df = df_times[0].append(df_times[1:])
 
@@ -86,7 +86,7 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
         # Initialize the FacetGrid object
 
         pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
-        g = sns.FacetGrid(total_df, row="g", hue="g", aspect=15, size=.5, palette=pal, xlim=[-1, 3], ) #
+        g = sns.FacetGrid(total_df, row="g", hue="g", aspect=15, size=.5, palette=pal, xlim=[-1, 7], ) #
 
         # cstr_plt_ax = []
         # for i in [0, 3, 6, 9]:
@@ -99,10 +99,10 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
                         ha="left", va="center", transform=ax.transAxes)
                 ax.text(0, .65, algo, color='black', fontsize=FONTSIZE,  fontweight="bold",
                         ha="left", va="center", transform=ax.transAxes)
-                ax.text(0.5, .45, 'Limit', color='r', fontsize=FONTSIZE,  # fontweight="bold",
+                ax.text(0.25, .45, 'Limit', color='r', fontsize=FONTSIZE,  # fontweight="bold",
                         ha="left", va="center", transform=ax.transAxes)
             if iter == g.row_names[-1]:
-                ax.text(0.8, 0.15, r"$v^\pi_c$ distribution", color='black', fontsize=int(FONTSIZE * 0.7),  # fontweight="bold",
+                ax.text(0.8, 0.15, r"$v^\pi_c$ distribution", color='black', fontsize=int(FONTSIZE),  # fontweight="bold",
                         ha="left", va="center", transform=ax.transAxes)
 
         # Draw the densities in a few steps
@@ -369,16 +369,16 @@ def main():
     #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoal2-v0',
     #                                        '../data/2021-11-20_ppo_Safexp-CustomGoal2-v0',
     #                                        ], nargs='*')
-    parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_cpo_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_ppo_lagrangian_Safexp-CustomPush2-v0',
-                                           '../data/2021-11-21_ppo_Safexp-CustomPush2-v0',
-                                           ], nargs='*')
-    # parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
-    #                                        '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0',
+    # parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_cpo_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_ppo_lagrangian_Safexp-CustomPush2-v0',
+    #                                        '../data/2021-11-21_ppo_Safexp-CustomPush2-v0',
     #                                        ], nargs='*')
+    parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
+                                           '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0',
+                                           ], nargs='*')
     parser.add_argument('--legend', '-l', default=['FPO','CPO','PPO-L','PPO'], nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
     parser.add_argument('--value', '-y', default=['AverageEpCost,h10,u100'], nargs='*')
