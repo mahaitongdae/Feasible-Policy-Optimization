@@ -64,7 +64,7 @@ def load_feasibiltiy(fpath, itr='last', deterministic=False):
         print('Using default action op.')
         action_op = model['pi']
 
-    multiplier_op = model['mu']
+    multiplier_op = model['multiplier']
     vc_op = model['vc']
 
     # make function for producing an action given a single state

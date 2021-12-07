@@ -1,0 +1,71 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            64,
+            64
+        ]
+    },
+    "actor_critic":	"mlp_actor_critic_with_lam",
+    "agent":	{
+        "<safe_rl.pg.agents.PPO_Agent_with_Mu object at 0x7f9e64a3bb00>":	{
+            "ascent_interval":	3,
+            "clip_ratio":	0.2,
+            "kl_margin":	1.2,
+            "mu_iters":	5,
+            "mu_lr":	0.0001,
+            "params":	{
+                "clipped_adv":	true,
+                "constrained":	false,
+                "dual_ascent":	true,
+                "first_order":	true,
+                "learn_penalty":	false,
+                "objective_penalized":	true,
+                "penalty_param_loss":	false,
+                "reward_penalized":	false
+            },
+            "pi_iters":	80,
+            "pi_lr":	0.0003
+        }
+    },
+    "cost_gamma":	0.99,
+    "cost_lam":	0.95,
+    "cost_lim":	10,
+    "dual_ascent_interval":	1,
+    "ent_reg":	0.0,
+    "env_fn":	"<function main.<locals>.<lambda> at 0x7f9e64a3e378>",
+    "epochs":	150,
+    "exp_name":	"ppo_dual_ascent_Safexp-CustomGoal2-v0",
+    "gamma":	0.99,
+    "lam":	0.95,
+    "logger":	{
+        "<safe_rl.utils.logx.EpochLogger object at 0x7f9e64a3bb38>":	{
+            "epoch_dict":	{},
+            "exp_name":	"ppo_dual_ascent_Safexp-CustomGoal2-v0",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/mahaitong/PycharmProjects/safety-starter-agents/data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0/2021-11-19_01-35-35-ppo_dual_ascent_Safexp-CustomGoal2-v0_s2",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/mahaitong/PycharmProjects/safety-starter-agents/data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0/2021-11-19_01-35-35-ppo_dual_ascent_Safexp-CustomGoal2-v0_s2/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"ppo_dual_ascent_Safexp-CustomGoal2-v0",
+        "output_dir":	"/home/mahaitong/PycharmProjects/safety-starter-agents/data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0/2021-11-19_01-35-35-ppo_dual_ascent_Safexp-CustomGoal2-v0_s2"
+    },
+    "lr_decay":	true,
+    "max_ep_len":	1000,
+    "penalty_init":	1.0,
+    "penalty_lr":	0.05,
+    "render":	false,
+    "rew_scale":	0.1,
+    "save_freq":	50,
+    "seed":	2,
+    "steps_per_epoch":	8000,
+    "target_kl":	0.01,
+    "vf_iters":	80,
+    "vf_lr":	0.0003
+}
