@@ -12,11 +12,15 @@ DIV_LINE_WIDTH = 50
 exp_idx = 0
 units = dict()
 
-def plot_data(data, xaxis='Epoch', value="AverageEpRet", 
+FONTSIZE = 20
+LINEWIDTH = 4.
+
+def plot_data(data, xaxis='Epoch', value="AverageEpRet",
               condition="Condition1", smooth=1, paper=False,
-              hidelegend=False, title=None, savedir=None, 
-              clear_xticks=False, logy=False, **kwargs):
+              hidelegend=False, title=None, savedir=None,
+              clear_xticks=False, logy=False, cstrline=False, env_name=None, **kwargs):
     # special handling for plotting a horizontal line
+    # fig, ax = plt.subplots()
     splits = value.split(',')
     value = splits[0]
     #if len(splits) > 1:
@@ -51,118 +55,27 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet",
             smoothed_x = np.convolve(x,y,'same') / np.convolve(z,y,'same')
             datum[value] = smoothed_x
 
+    sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
+    df_times = []
+    tag_list = ['AverageCostVVals','AverageEpRet','AverageEpCost']
+    data_dist = data[tag_list]
+    for algo in ['FPO','CPO','PPO-L','PPO']: #
+        epoch = 149
+        mean = data_dist[np.logical_and(data['Condition1'] == algo, data['Epoch'] == epoch)].mean()
+        std = data_dist[np.logical_and(data['Condition1'] == algo, data['Epoch'] == epoch)].std()
+        for tag in tag_list:
+            print('Algo: ' + algo + ' tag: ' + tag + ' mean: {:.3f}'.format(mean[tag]) + 'std: {:.3f}'.format(std[tag]))
 
-    font_scale = 1. if paper else 1.
-    print(font_scale)
-    sns.set(style="darkgrid", font_scale=font_scale)
-    """
-    #sns.set_palette(sns.color_palette('muted'))
-
-    sns.set_palette([(0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
- #(1.0, 0.4980392156862745, 0.054901960784313725),
- (0.17254901960784313, 0.6274509803921569, 0.17254901960784313),
- (0.5803921568627451, 0.403921568627451, 0.7411764705882353),
- (0.8392156862745098, 0.15294117647058825, 0.1568627450980392),
- #(0.5490196078431373, 0.33725490196078434, 0.29411764705882354),
- #(0.8901960784313725, 0.4666666666666667, 0.7607843137254902),
- #(0.4980392156862745, 0.4980392156862745, 0.4980392156862745),
- (0.7372549019607844, 0.7411764705882353, 0.13333333333333333),
- (0.09019607843137255, 0.7450980392156863, 0.8117647058823529)]
-)
-    #"""
-    if logy:
-        data[value] = np.log10(data[value])
-    sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", condition=condition, ci='sd', **kwargs)
-    """
-    If you upgrade to any version of Seaborn greater than 0.8.1, switch from 
-    tsplot to lineplot replacing L29 with:
-
-        sns.lineplot(data=data, x=xaxis, y=value, hue=condition, ci='sd', **kwargs)
-
-    Changes the colorscheme and the default legend style, though.
-    """
-    plt.legend(loc='best')#.draggable()
-
-    """
-    For the version of the legend used in the Spinning Up benchmarking page, 
-    swap L38 with:
-
-    plt.legend(loc='upper center', ncol=6, handlelength=1,
-               mode="expand", borderaxespad=0., prop={'size': 13})
-    """
-
-    xmax = np.max(np.asarray(data[xaxis]))
-    xscale = xmax > 5e3
-    if xscale:
-        # Just some formatting niceness: x-axis scale in scientific notation if max x is large
-        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-
-    old_ymin, old_ymax = plt.ylim()
-
-    if ymin:
-        plt.ylim(bottom=min(ymin, old_ymin))
-
-    if ymax:
-        plt.ylim(top=max(ymax, old_ymax))
-
-    # plt.xlim([0, 2e6])
-    #
-    # plt.ylim([-20, 1.0])
-    if title:
-       plt.title(title)
-
-    if paper:
-        plt.gcf().set_size_inches(3.85,2.75)
-        plt.tight_layout(pad=0.5)
-    else:
-        plt.tight_layout(pad=0.5)
-
-
-    if y_horiz:
-        # y, xmin, xmax, colors='k', linestyles='solid', label='',
-        plt.hlines(y_horiz, 0, xmax, colors='red', linestyles='dashed', label='limit')
-
-    fname = osp.join(savedir, title+'_'+value).lower()
-
-    if clear_xticks:
-        x, _ = plt.xticks()
-        plt.xticks(x, [])
-        plt.xlabel('')
-        fname += '_nox'
-
-    if savedir is not '':
-        os.makedirs(savedir, exist_ok=True)
-        plt.savefig(fname+'.pdf', format='pdf')
-
-    if hidelegend:
-        plt.legend().remove()
-
-        if savedir is not '':
-            plt.savefig(fname + '_nolegend.pdf', format='pdf')
-
-    if savedir is not '':
-        # Separately save legend
-        h, l = plt.axes().get_legend_handles_labels()
-        legfig, legax = plt.subplots(figsize=(7.5,0.75))
-        legax.set_facecolor('white')
-        leg = legax.legend(h, l, loc='center', ncol=5, handlelength=1.5,
-                   mode="expand", borderaxespad=0., prop={'size': 13})
-        legax.xaxis.set_visible(False)
-        legax.yaxis.set_visible(False)
-        for line in leg.get_lines():
-            line.set_linewidth(4.0)
-        plt.tight_layout(pad=0.5)
-        plt.savefig(osp.join(savedir, title+'_legend.pdf'), format='pdf')
 
 
 def get_datasets(logdir, condition=None):
     """
     Recursively look through logdir for output files produced by
-    spinup.logx.Logger. 
+    spinup.logx.Logger.
 
-    Assumes that any file "progress.txt" is a valid hit. 
+    Assumes that any file "progress.txt" is a valid hit.
     """
     global exp_idx
     global units
@@ -202,10 +115,10 @@ def get_datasets(logdir, condition=None):
 def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
     """
     For every entry in all_logdirs,
-        1) check if the entry is a real directory and if it is, 
-           pull data from it; 
+        1) check if the entry is a real directory and if it is,
+           pull data from it;
 
-        2) if not, check to see if the entry is a prefix for a 
+        2) if not, check to see if the entry is a prefix for a
            real directory, and pull data from that.
     """
     logdirs = []
@@ -250,49 +163,60 @@ def get_all_datasets(all_logdirs, legend=None, select=None, exclude=None):
     return data
 
 
-def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,  
+def make_plots(all_logdirs, legend=None, xaxis=None, values=None, count=False,
                font_scale=1.5, smooth=1, select=None, exclude=None, estimator='mean',
                paper=True, hidelegend=False, title=None, savedir=None, show=True,
-               clear_xticks=False, logy=False):
+               clear_xticks=False, logy=False, cstrline=False):
     data = get_all_datasets(all_logdirs, legend, select, exclude)
+    env_name = all_logdirs[0].split('-')[-2]
     values = values if isinstance(values, list) else [values]
     condition = 'Condition2' if count else 'Condition1'
     estimator = getattr(np, estimator)      # choose what to show on main curve: mean? max? min?
     for value in values:
-        plt.figure()
-        plot_data(data, xaxis=xaxis, value=value, condition=condition, 
+        plot_data(data, xaxis=xaxis, value=value, condition=condition,
                   smooth=smooth, estimator=estimator,
-                  paper=paper, hidelegend=hidelegend, 
+                  paper=paper, hidelegend=hidelegend,
                   title=title, savedir=savedir,
-                  clear_xticks=clear_xticks,logy=logy)
+                  clear_xticks=clear_xticks,logy=logy, cstrline=cstrline, env_name=env_name)
 
-    if show:
-        plt.show()
+    # if show:
+    #     plt.show()
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
-                                          ], nargs='*')
+    # parser.add_argument('logdir', default=['../data/2021-11-20_ppo_Safexp-CustomPush2-v0',
+    #                                       ], nargs='*')
     # parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoal2-v0',
     #                                        '../data/2021-11-20_cpo_Safexp-CustomGoal2-v0',
     #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoal2-v0',
     #                                        '../data/2021-11-20_ppo_Safexp-CustomGoal2-v0',
     #                                        ], nargs='*')
-    parser.add_argument('--legend', '-l', nargs='*')
+    parser.add_argument('logdir', default=['../data/2021-11-21_ppo_dual_ascent_Safexp-CustomPush2-v0',
+                                           '../data/2021-11-21_cpo_Safexp-CustomPush2-v0',
+                                           '../data/2021-11-21_ppo_lagrangian_Safexp-CustomPush2-v0',
+                                           '../data/2021-11-21_ppo_Safexp-CustomPush2-v0',
+                                           ], nargs='*')
+    # parser.add_argument('logdir', default=['../data/2021-11-19_ppo_dual_ascent_Safexp-CustomGoalPillar2-v0',
+    #                                        '../data/2021-11-20_cpo_Safexp-CustomGoalPillar2-v0',
+    #                                        '../data/2021-11-20_ppo_lagrangian_Safexp-CustomGoalPillar2-v0',
+    #                                        '../data/2021-11-20_ppo_Safexp-CustomGoalPillar2-v0',
+    #                                        ], nargs='*')
+    parser.add_argument('--legend', '-l', default=['FPO','CPO','PPO-L','PPO'], nargs='*')
     parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
-    parser.add_argument('--value', '-y', default='MaxMultiplier', nargs='*')
+    parser.add_argument('--value', '-y', default=['AverageEpCost,h10,u100'], nargs='*')
     parser.add_argument('--count', action='store_true')
-    parser.add_argument('--smooth', '-s', type=int, default=5)
+    parser.add_argument('--cstrline', default=False, action='store_true')
+    parser.add_argument('--smooth', '-s', type=int, default=1)
     parser.add_argument('--select', nargs='*')
     parser.add_argument('--exclude', nargs='*')
     parser.add_argument('--est', default='mean')
-    parser.add_argument('--paper', action='store_true')
-    parser.add_argument('--hidelegend', '-hl', action='store_true')
+    parser.add_argument('--paper', default=True, action='store_true')
+    parser.add_argument('--hidelegend', '-hl', default=True, action='store_true')
     parser.add_argument('--title', type=str, default='Performance')
     parser.add_argument('--savedir', type=str, default='data/figure')
-    parser.add_argument('--dont_show', action='store_true')
+    parser.add_argument('--dont_show', default=False, action='store_true')
     parser.add_argument('--clearx', action='store_true')
     parser.add_argument('--logy', default=False)
     args = parser.parse_args()
@@ -345,11 +269,11 @@ def main():
 
     """
 
-    make_plots(args.logdir, args.legend, args.xaxis, args.value, args.count, 
+    make_plots(args.logdir, args.legend, args.xaxis, args.value, args.count,
                smooth=args.smooth, select=args.select, exclude=args.exclude,
                estimator=args.est, paper=args.paper, hidelegend=args.hidelegend,
                title=args.title, savedir=args.savedir, show=not(args.dont_show),
-               clear_xticks=args.clearx, logy=args.logy)
+               clear_xticks=args.clearx, logy=args.logy, cstrline=args.cstrline)
 
 if __name__ == "__main__":
     main()
