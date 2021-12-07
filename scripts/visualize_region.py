@@ -2,10 +2,29 @@
 
 import time
 import numpy as np
-from safe_rl.utils.load_utils import load_policy
+from safe_rl.utils.load_utils import load_policy, load_feasibiltiy
 from safe_rl.utils.logx import EpochLogger
 
+def collect_obs(env, bound=1.0):
+    env.reset()
+    config_dict = env.world_config_dict
+    x = np.linspace(-bound, bound, 10)
+    y = np.linspace(-bound, bound, 10)
+    X, Y = np.meshgrid(x, y)
+    obs = []
+    for i in range(10):
+        for j in range(10):
+            print(i, j)
+            config_dict['robot_xy'] = np.array([X[i, j], Y[i, j]])
+            env.world_config_dict = config_dict
+            env.world.rebuild(config_dict)
+            obs.append(env.obs())
+            env.render()
+    a = 1
+    return obs
 
+def visualize_region(get_feasibility):
+    pass
 
 def run_policy(env, get_action, max_ep_len=None, num_episodes=100, render=True):
 
@@ -52,6 +71,9 @@ if __name__ == '__main__':
     parser.add_argument('--deterministic', '-d', action='store_true')
     args = parser.parse_args()
     env, get_action, sess = load_policy(args.fpath,
+                                        args.itr if args.itr >=0 else 'last',
+                                        args.deterministic)
+    env, get_feasibility_indicator, sess = load_policy(args.fpath,
                                         args.itr if args.itr >=0 else 'last',
                                         args.deterministic)
     run_policy(env, get_action, args.len, args.episodes, not(args.norender))
